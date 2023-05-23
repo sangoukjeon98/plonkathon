@@ -27,7 +27,7 @@ class Setup(object):
         powers = 2 ** contents[SETUP_FILE_POWERS_POS]
         # Extract G1 points, which start at byte 80
         values = [
-            int.from_bytes(contents[i : i + 32], "little")
+            int.from_bytes(contents[i: i + 32], "little")
             for i in range(
                 SETUP_FILE_G1_STARTPOS, SETUP_FILE_G1_STARTPOS + 32 * powers * 2, 32
             )
@@ -38,21 +38,22 @@ class Setup(object):
         # extract the factor because we know the first point is the generator.
         factor = b.FQ(values[0]) / b.G1[0]
         values = [b.FQ(x) / factor for x in values]
-        powers_of_x = [(values[i * 2], values[i * 2 + 1]) for i in range(powers)]
+        powers_of_x = [(values[i * 2], values[i * 2 + 1])
+                       for i in range(powers)]
         print("Extracted G1 side, X^1 point: {}".format(powers_of_x[1]))
         # Search for start of G2 points. We again know that the first point is
         # the generator.
         pos = SETUP_FILE_G1_STARTPOS + 32 * powers * 2
         target = (factor * b.G2[0].coeffs[0]).n
         while pos < len(contents):
-            v = int.from_bytes(contents[pos : pos + 32], "little")
+            v = int.from_bytes(contents[pos: pos + 32], "little")
             if v == target:
                 break
             pos += 1
         print("Detected start of G2 side at byte {}".format(pos))
-        X2_encoding = contents[pos + 32 * 4 : pos + 32 * 8]
+        X2_encoding = contents[pos + 32 * 4: pos + 32 * 8]
         X2_values = [
-            b.FQ(int.from_bytes(X2_encoding[i : i + 32], "little")) / factor
+            b.FQ(int.from_bytes(X2_encoding[i: i + 32], "little")) / factor
             for i in range(0, 128, 32)
         ]
         X2 = (b.FQ2(X2_values[:2]), b.FQ2(X2_values[2:]))
@@ -62,6 +63,16 @@ class Setup(object):
         # print("X^1 points checked consistent")
         return cls(powers_of_x, X2)
 
+    # Encodes the KZG commitment to the given polynomial coeffs
+    def coeffs_to_point(self, coeffs):
+        if len(coeffs) > len(self.powers_of_x):
+            raise Exception("Not enough powers in setup")
+        return ec_lincomb([(s, x) for s, x in zip(self.powers_of_x, coeffs)])
+
+    # Encodes the KZG commitment that evaluates to the given values in the group
+    def evaluations_to_point(self, evals):
+        return self.coeffs_to_point(evals.ifft().values)
+
     # Encodes the KZG commitment that evaluates to the given values in the group
     def commit(self, values: Polynomial) -> G1Point:
         assert values.basis == Basis.LAGRANGE
@@ -69,9 +80,24 @@ class Setup(object):
         # Run inverse FFT to convert values from Lagrange basis to monomial basis
         # Optional: Check values size does not exceed maximum power setup can handle
         # Compute linear combination of setup with values
-        return NotImplemented
+
+        return self.evaluations_to_point(values)
 
     # Generate the verification key for this program with the given setup
     def verification_key(self, pk: CommonPreprocessedInput) -> VerificationKey:
         # Create the appropriate VerificationKey object
-        return NotImplemented
+
+        vk = VerificationKey(
+            Qm=self.evaluations_to_point(pk.QM),
+            Ql=self.evaluations_to_point(pk.QL),
+            Qr=self.evaluations_to_point(pk.QR),
+            Qo=self.evaluations_to_point(pk.QO),
+            Qc=self.evaluations_to_point(pk.QC),
+            S1=self.evaluations_to_point(pk.S1),
+            S2=self.evaluations_to_point(pk.S2),
+            S3=self.evaluations_to_point(pk.S3),
+            X_2=self.X2,
+            group_order=pk.group_order,
+            w=Scalar(Scalar.root_of_unity(pk.group_order))
+        )
+        return vk

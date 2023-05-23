@@ -120,8 +120,10 @@ class Program:
         for coeff in coeffs:
             if coeff.get("$public", False) is True:
                 if no_more_allowed:
-                    raise Exception("Public var declarations must be at the top")
-                var_name = [x for x in list(coeff.keys()) if "$" not in str(x)][0]
+                    raise Exception(
+                        "Public var declarations must be at the top")
+                var_name = [x for x in list(
+                    coeff.keys()) if "$" not in str(x)][0]
                 if coeff != {"$public": True, "$output_coeff": 0, var_name: -1}:
                     raise Exception("Malformatted coeffs: {}", format(coeffs))
                 o.append(var_name)
@@ -176,7 +178,8 @@ class Program:
                     Scalar(
                         coeffs.get("", 0)
                         + out[in_L] * coeffs.get(in_L, 0)
-                        + out[in_R] * coeffs.get(in_R, 0) * (1 if in_R != in_L else 0)
+                        + out[in_R] *
+                        coeffs.get(in_R, 0) * (1 if in_R != in_L else 0)
                         + out[in_L] * out[in_R] * coeffs.get(product_key, 0)
                     )
                     * out_coeff
@@ -184,7 +187,8 @@ class Program:
                 if output in out:
                     if out[output] != new_value:
                         raise Exception(
-                            "Failed assertion: {} = {}".format(out[output], new_value)
+                            "Failed assertion: {} = {}".format(
+                                out[output], new_value)
                         )
                 else:
                     out[output] = new_value

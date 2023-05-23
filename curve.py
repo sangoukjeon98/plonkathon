@@ -1,3 +1,6 @@
+import math
+import sys
+import random
 from py_ecc.fields.field_elements import FQ as Field
 import py_ecc.bn128 as b
 from typing import NewType
@@ -53,8 +56,6 @@ def ec_lincomb(pairs):
 # multicombs
 ################################################################
 
-import random, sys, math
-
 
 def multisubset(numbers, subsets, adder=lambda x, y: x + y, zero=0):
     # Split up the numbers into partitions
@@ -67,7 +68,7 @@ def multisubset(numbers, subsets, adder=lambda x, y: x + y, zero=0):
     power_sets = []
     for i in range(0, len(numbers), partition_size):
         new_power_set = [zero]
-        for dimension, value in enumerate(numbers[i : i + partition_size]):
+        for dimension, value in enumerate(numbers[i: i + partition_size]):
             new_power_set += [adder(n, value) for n in new_power_set]
         power_sets.append(new_power_set)
     # Compute subset sums, using elements from power set for each range of values

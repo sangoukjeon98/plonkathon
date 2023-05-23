@@ -1,5 +1,8 @@
-import py_ecc.bn128 as b
 from curve import Scalar
+import py_ecc.bn128.bn128_curve as b
+import sys
+sys.path.insert(0, '/home/jsw/.local/lib/python3.10/site-packages/')
+
 
 f = b.FQ
 f2 = b.FQ2
@@ -7,6 +10,8 @@ f2 = b.FQ2
 primitive_root = 5
 
 # Extracts a point from JSON in zkrepl's format
+
+
 def interpret_json_point(p):
     if len(p) == 3 and isinstance(p[0], str) and p[2] == "1":
         return (f(int(p[0])), f(int(p[1])))
